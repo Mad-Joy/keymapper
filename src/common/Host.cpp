@@ -54,6 +54,9 @@ void set_unix_domain_socket_path(const std::string& ipc_id,
     DeleteFileA(addr.sun_path);
 }
 
+void set_close_on_exec(Socket socket_fd) {
+}
+
 void make_blocking(Socket socket_fd) {
   auto mode = u_long{ 0 };
   ::ioctlsocket(socket_fd, FIONBIO, &mode);
@@ -103,6 +106,11 @@ void set_unix_domain_socket_path(const std::string& ipc_id,
 # endif // !defined(__linux)
 }
 
+void set_close_on_exec(Socket socket_fd) {
+  auto flags = ::fcntl(socket_fd, F_GETFL, 0);
+  ::fcntl(socket_fd, F_SETFD, flags | FD_CLOEXEC);
+}
+
 void make_blocking(Socket socket_fd) {
   auto flags = ::fcntl(socket_fd, F_GETFL, 0);
   ::fcntl(socket_fd, F_SETFL, flags & ~O_NONBLOCK);
@@ -120,7 +128,7 @@ Host::~Host() {
 }
 
 bool Host::listen() {
-  m_listen_fd = ::socket(AF_UNIX, SOCK_STREAM, 0);
+  m_listen_fd = ::socket(AF_UNIX, SOCK_STREAM | SOCK_CLOEXEC, 0);
   if (m_listen_fd == invalid_socket)
     return false;
 
@@ -161,6 +169,8 @@ Connection Host::accept(std::optional<Duration> timeout) {
   auto socket_fd = ::accept(m_listen_fd, nullptr, nullptr);
   if (socket_fd == invalid_socket)
     return { };
+
+  set_close_on_exec(socket_fd);
   make_blocking(socket_fd);
   auto connection = Connection(socket_fd);
 
@@ -190,7 +200,7 @@ Connection Host::connect(std::optional<Duration> timeout) {
   const auto retry_until_timepoint = (timeout ?
     std::make_optional(Clock::now() + *timeout) : std::nullopt);
 
-  auto socket_fd = ::socket(AF_UNIX, SOCK_STREAM, 0);
+  auto socket_fd = ::socket(AF_UNIX, SOCK_STREAM | SOCK_CLOEXEC, 0);
   for (;;) {
     if (socket_fd == invalid_socket)
       return { };
@@ -205,7 +215,7 @@ Connection Host::connect(std::optional<Duration> timeout) {
           !connection.read(&versions_match)) {
         // this fails regularly when reconnecting to a closing host
         connection.disconnect();
-        socket_fd = ::socket(AF_UNIX, SOCK_STREAM, 0);
+        socket_fd = ::socket(AF_UNIX, SOCK_STREAM | SOCK_CLOEXEC, 0);
         continue;
       }
       if (!versions_match)
