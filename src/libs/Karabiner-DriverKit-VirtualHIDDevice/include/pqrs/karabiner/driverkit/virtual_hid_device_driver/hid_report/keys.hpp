@@ -4,24 +4,21 @@
 // Distributed under the Boost Software License, Version 1.0.
 // (See https://www.boost.org/LICENSE_1_0.txt)
 
+#include <cstddef>
 #include <cstdint>
 #include <cstring>
 
-namespace pqrs {
-namespace karabiner {
-namespace driverkit {
-namespace virtual_hid_device_driver {
-namespace hid_report {
+namespace pqrs::karabiner::driverkit::virtual_hid_device_driver::hid_report {
 
 class __attribute__((packed)) keys final {
 public:
-  keys(void) : keys_{} {}
+  keys() : keys_{} {}
 
-  const uint16_t (&get_raw_value(void) const)[32] {
+  const uint16_t (&get_raw_value() const)[32] {
     return keys_;
   }
 
-  bool empty(void) const {
+  bool empty() const {
     for (const auto& k : keys_) {
       if (k != 0) {
         return false;
@@ -30,7 +27,7 @@ public:
     return true;
   }
 
-  void clear(void) {
+  void clear() {
     memset(keys_, 0, sizeof(keys_));
   }
 
@@ -63,8 +60,8 @@ public:
     return false;
   }
 
-  size_t count(void) const {
-    size_t result = 0;
+  std::size_t count() const {
+    std::size_t result = 0;
     for (const auto& k : keys_) {
       if (k) {
         ++result;
@@ -79,9 +76,4 @@ public:
 private:
   uint16_t keys_[32];
 };
-
-} // namespace hid_report
-} // namespace virtual_hid_device_driver
-} // namespace driverkit
-} // namespace karabiner
-} // namespace pqrs
+} // namespace pqrs::karabiner::driverkit::virtual_hid_device_driver::hid_report

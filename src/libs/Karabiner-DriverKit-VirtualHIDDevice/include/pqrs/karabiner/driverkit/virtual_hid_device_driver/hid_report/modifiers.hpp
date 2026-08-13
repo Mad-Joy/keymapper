@@ -6,26 +6,23 @@
 
 #include "modifier.hpp"
 #include <cstdint>
+#include <cstring>
 
-namespace pqrs {
-namespace karabiner {
-namespace driverkit {
-namespace virtual_hid_device_driver {
-namespace hid_report {
+namespace pqrs::karabiner::driverkit::virtual_hid_device_driver::hid_report {
 
 class __attribute__((packed)) modifiers final {
 public:
-  modifiers(void) : modifiers_(0) {}
+  modifiers() : modifiers_(0) {}
 
-  uint8_t get_raw_value(void) const {
+  uint8_t get_raw_value() const {
     return modifiers_;
   }
 
-  bool empty(void) const {
+  bool empty() const {
     return modifiers_ == 0;
   }
 
-  void clear(void) {
+  void clear() {
     modifiers_ = 0;
   }
 
@@ -47,9 +44,4 @@ public:
 private:
   uint8_t modifiers_;
 };
-
-} // namespace hid_report
-} // namespace virtual_hid_device_driver
-} // namespace driverkit
-} // namespace karabiner
-} // namespace pqrs
+} // namespace pqrs::karabiner::driverkit::virtual_hid_device_driver::hid_report

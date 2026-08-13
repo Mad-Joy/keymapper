@@ -7,13 +7,10 @@
 #include <pqrs/hid.hpp>
 #include <string_view>
 
-namespace pqrs {
-namespace karabiner {
-namespace driverkit {
-namespace virtual_hid_device_service {
+namespace pqrs::karabiner::driverkit::virtual_hid_device_service {
 class virtual_hid_keyboard_parameters final {
 public:
-  virtual_hid_keyboard_parameters(void)
+  virtual_hid_keyboard_parameters()
       : virtual_hid_keyboard_parameters(pqrs::hid::vendor_id::value_t(0x16c0),
                                         pqrs::hid::product_id::value_t(0x27db),
                                         pqrs::hid::country_code::not_supported) {
@@ -27,7 +24,7 @@ public:
         country_code_(country_code) {
   }
 
-  pqrs::hid::vendor_id::value_t get_vendor_id(void) const {
+  pqrs::hid::vendor_id::value_t get_vendor_id() const {
     return vendor_id_;
   }
 
@@ -35,7 +32,7 @@ public:
     vendor_id_ = value;
   }
 
-  pqrs::hid::product_id::value_t get_product_id(void) const {
+  pqrs::hid::product_id::value_t get_product_id() const {
     return product_id_;
   }
 
@@ -43,7 +40,7 @@ public:
     product_id_ = value;
   }
 
-  pqrs::hid::country_code::value_t get_country_code(void) const {
+  pqrs::hid::country_code::value_t get_country_code() const {
     return country_code_;
   }
 
@@ -58,7 +55,4 @@ private:
   pqrs::hid::product_id::value_t product_id_;
   pqrs::hid::country_code::value_t country_code_;
 };
-} // namespace virtual_hid_device_service
-} // namespace driverkit
-} // namespace karabiner
-} // namespace pqrs
+} // namespace pqrs::karabiner::driverkit::virtual_hid_device_service

@@ -10,35 +10,41 @@
 #include <limits>
 #include <mutex>
 #include <ostream>
+#include <stdexcept>
 #include <unordered_set>
+#include <utility>
 
-namespace pqrs {
-namespace dispatcher {
+namespace pqrs::dispatcher {
 class object_id final {
 public:
   object_id(const object_id&) = delete;
-  object_id(object_id&&) = default;
+  object_id& operator=(const object_id&) = delete;
+  object_id& operator=(object_id&&) = delete;
 
-  ~object_id(void) {
+  object_id(object_id&& other) noexcept
+      : value_(std::exchange(other.value_, 0)) {
+  }
+
+  ~object_id() {
     manager::erase(value_);
   }
 
-  static object_id make_new_object_id(void) {
+  static object_id make_new_object_id() {
     return object_id(manager::make());
   }
 
-  static size_t active_object_id_count(void) {
+  static size_t active_object_id_count() {
     return manager::size();
   }
 
-  uint64_t get(void) const {
+  [[nodiscard]] uint64_t get() const noexcept {
     return value_;
   }
 
 private:
   class manager final {
   public:
-    static uint64_t make(void) {
+    static uint64_t make() {
       std::lock_guard<std::mutex> lock(mutex());
 
       if (set().size() >= std::numeric_limits<uint64_t>::max()) {
@@ -47,8 +53,7 @@ private:
 
       while (true) {
         auto value = ++(last_value());
-        auto it = set().find(value);
-        if (it == std::end(set())) {
+        if (!set().contains(value)) {
           set().insert(value);
           last_value() = value;
           return value;
@@ -62,40 +67,41 @@ private:
       set().erase(value);
     }
 
-    static size_t size(void) {
+    static size_t size() {
       std::lock_guard<std::mutex> lock(mutex());
 
       return set().size();
     }
 
   private:
-    static std::mutex& mutex(void) {
+    static std::mutex& mutex() noexcept {
       static std::mutex mutex;
       return mutex;
     }
 
-    static std::unordered_set<uint64_t>& set(void) {
+    static std::unordered_set<uint64_t>& set() {
       static std::unordered_set<uint64_t> set;
       return set;
     }
 
-    static uint64_t& last_value(void) {
+    static uint64_t& last_value() noexcept {
       static uint64_t value = 0;
       return value;
     }
   };
 
-  object_id(uint64_t value) : value_(value) {
+  explicit object_id(uint64_t value) noexcept
+      : value_(value) {
   }
 
-  uint64_t value_;
+  uint64_t value_ = 0;
 };
 
-inline object_id make_new_object_id(void) {
+inline object_id make_new_object_id() {
   return object_id::make_new_object_id();
 }
 
-inline size_t active_object_id_count(void) {
+inline size_t active_object_id_count() {
   return object_id::active_object_id_count();
 }
 
@@ -103,5 +109,4 @@ inline std::ostream& operator<<(std::ostream& stream, const object_id& value) {
   stream << value.get();
   return stream;
 }
-} // namespace dispatcher
-} // namespace pqrs
+} // namespace pqrs::dispatcher

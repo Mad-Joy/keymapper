@@ -9,9 +9,7 @@
 #include <iostream>
 #include <type_safe/strong_typedef.hpp>
 
-namespace pqrs {
-namespace hid {
-namespace usage {
+namespace pqrs::hid::usage {
 struct value_t : type_safe::strong_typedef<value_t, int32_t>,
                  type_safe::strong_typedef_op::equality_comparison<value_t>,
                  type_safe::strong_typedef_op::relational_comparison<value_t>,
@@ -19,7 +17,7 @@ struct value_t : type_safe::strong_typedef<value_t, int32_t>,
                  type_safe::strong_typedef_op::decrement<value_t> {
   using strong_typedef::strong_typedef;
 
-  constexpr auto operator<=>(const value_t& other) const {
+  [[nodiscard]] constexpr auto operator<=>(const value_t& other) const noexcept {
     return type_safe::get(*this) <=> type_safe::get(other);
   }
 };
@@ -661,9 +659,16 @@ constexpr value_t ac_back(0x0224);
 constexpr value_t ac_forward(0x0225);
 constexpr value_t ac_refresh(0x0227);
 constexpr value_t ac_bookmarks(0x022a);
-constexpr value_t ac_zoom_out(0x22d);
-constexpr value_t ac_zoom_in(0x22e);
+constexpr value_t ac_zoom_in(0x22d);
+constexpr value_t ac_zoom_out(0x22e);
 constexpr value_t ac_pan(0x0238); // Horizontal mouse wheel
+constexpr value_t ac_keyboard_layout_select(0x029d);
+constexpr value_t ac_desktop_show_all_windows(0x29f);
+// ac_soft_key_left and ac_desktop_show_all_applications had conflicting codes
+// fixed in HUTRR97, but some keyboards still use the old value so support it.
+// https://www.usb.org/sites/default/files/hutrr97_-_navigation_and_desktop_show_all_usageid_reassignment.pdf
+constexpr value_t ac_soft_key_left(0x2a0);
+constexpr value_t ac_desktop_show_all_applications(0x2a2);
 
 } // namespace consumer
 
@@ -748,9 +753,7 @@ constexpr value_t illumination_down(0x0009);
 constexpr value_t clamshell_latched(0x000a);
 constexpr value_t reserved_mouse_data(0x00c0);
 } // namespace apple_vendor_top_case
-} // namespace usage
-} // namespace hid
-} // namespace pqrs
+} // namespace pqrs::hid::usage
 
 namespace std {
 template <>

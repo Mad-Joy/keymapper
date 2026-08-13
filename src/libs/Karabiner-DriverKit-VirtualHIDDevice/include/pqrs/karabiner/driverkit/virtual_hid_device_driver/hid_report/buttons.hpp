@@ -5,26 +5,23 @@
 // (See https://www.boost.org/LICENSE_1_0.txt)
 
 #include <cstdint>
+#include <cstring>
 
-namespace pqrs {
-namespace karabiner {
-namespace driverkit {
-namespace virtual_hid_device_driver {
-namespace hid_report {
+namespace pqrs::karabiner::driverkit::virtual_hid_device_driver::hid_report {
 
 class __attribute__((packed)) buttons final {
 public:
-  buttons(void) : buttons_(0) {}
+  buttons() : buttons_(0) {}
 
-  uint32_t get_raw_value(void) const {
+  uint32_t get_raw_value() const {
     return buttons_;
   }
 
-  bool empty(void) const {
+  bool empty() const {
     return buttons_ == 0;
   }
 
-  void clear(void) {
+  void clear() {
     buttons_ = 0;
   }
 
@@ -64,9 +61,4 @@ private:
   // ...
   // (0x1 << 0) -> button 25
 };
-
-} // namespace hid_report
-} // namespace virtual_hid_device_driver
-} // namespace driverkit
-} // namespace karabiner
-} // namespace pqrs
+} // namespace pqrs::karabiner::driverkit::virtual_hid_device_driver::hid_report

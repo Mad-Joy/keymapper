@@ -6,12 +6,8 @@
 
 #include <string_view>
 
-namespace pqrs {
-namespace karabiner {
-namespace driverkit {
-namespace virtual_hid_device_service {
+namespace pqrs::karabiner::driverkit::virtual_hid_device_service {
 enum class request : uint8_t {
-  none,
   virtual_hid_keyboard_initialize,
   virtual_hid_keyboard_terminate,
   virtual_hid_keyboard_reset,
@@ -25,7 +21,4 @@ enum class request : uint8_t {
   post_generic_desktop_input_report,
   post_pointing_input_report,
 };
-} // namespace virtual_hid_device_service
-} // namespace driverkit
-} // namespace karabiner
-} // namespace pqrs
+} // namespace pqrs::karabiner::driverkit::virtual_hid_device_service

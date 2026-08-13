@@ -1,92 +1,80 @@
 #pragma once
 
-// pqrs::thread_wait v1.4
+// pqrs::thread_wait v2.2.0
 
 // (C) Copyright Takayama Fumihiko 2018.
 // Distributed under the Boost Software License, Version 1.0.
-// (See http://www.boost.org/LICENSE_1_0.txt)
+// (See https://www.boost.org/LICENSE_1_0.txt)
 
 // `pqrs::thread_wait` can be used safely in a multi-threaded environment.
 
+#include <atomic>
+#include <chrono>
+#include <condition_variable>
 #include <memory>
 #include <mutex>
-#include <condition_variable>
 
 namespace pqrs {
-class thread_wait {
+class thread_wait final {
+  struct constructor_key {
+  private:
+    constructor_key() = default;
+
+    friend class thread_wait;
+  };
+
 public:
-  // We have to use shared_ptr to avoid SEGV from a spuriously wake.
-  //
-  // Note:
-  //   If we don't use shared_ptr, `thread_wait::notify` rarely causes SEGV in the following case.
-  //
-  //   1. `notify` set notify_ = true.
-  //   2. `wait_notice` exits by spuriously wake.
-  //   3. `wait` is destructed.
-  //   4. `notify` calls `cv_.notify_all` with released `cv_`. (SEGV)
-  //
-  //   A bad example:
-  //     ----------------------------------------
-  //     {
-  //       pqrs::thread_wait w;
-  //       std::thread t([&w] {
-  //         w.notify(); // `notify` rarely causes SEGV.
-  //       });
-  //       t.detach();
-  //       w.wait_notice();
-  //     }
-  //     ----------------------------------------
-  //
-  //   A good example:
-  //     ----------------------------------------
-  //     {
-  //       auto w = pqrs::make_thread_wait();
-  //       std::thread t([w] {
-  //         w->notify();
-  //       });
-  //       t.detach();
-  //       w->wait_notice();
-  //     }
-  //     ----------------------------------------
-
-  static std::shared_ptr<thread_wait> make_thread_wait(void) {
-    struct impl : thread_wait {
-      impl(void) : thread_wait() {}
-    };
-    return std::make_shared<impl>();
+  // Keep thread_wait owned by shared_ptr while another thread may call notify.
+  // A waiter can return immediately after notify_ is set to true, and the object
+  // must remain alive until the notifier finishes notify_.notify_all().
+  static std::shared_ptr<thread_wait> make_thread_wait() {
+    return std::make_shared<thread_wait>(constructor_key{});
   }
 
-  virtual ~thread_wait(void) {
+  explicit thread_wait(constructor_key) noexcept {
   }
 
-  void wait_notice(void) {
+  ~thread_wait() = default;
+
+  thread_wait(const thread_wait&) = delete;
+  thread_wait(thread_wait&&) = delete;
+  thread_wait& operator=(const thread_wait&) = delete;
+  thread_wait& operator=(thread_wait&&) = delete;
+
+  void wait_notice() noexcept {
     std::unique_lock<std::mutex> lock(mutex_);
-
-    cv_.wait(lock, [this] {
-      return notify_;
+    condition_variable_.wait(lock, [this] {
+      return notify_.load(std::memory_order_acquire);
     });
   }
 
-  void notify(void) {
+  // Returns true if notified, or false if the timeout expires.
+  template <class Rep, class Period>
+  bool wait_notice_for(const std::chrono::duration<Rep, Period>& timeout_duration) noexcept {
+    std::unique_lock<std::mutex> lock(mutex_);
+    return condition_variable_.wait_for(lock,
+                                        timeout_duration,
+                                        [this] {
+                                          return notify_.load(std::memory_order_acquire);
+                                        });
+  }
+
+  void notify() noexcept {
     {
       std::lock_guard<std::mutex> lock(mutex_);
-
-      notify_ = true;
+      notify_.store(true, std::memory_order_release);
     }
 
-    cv_.notify_all();
+    condition_variable_.notify_all();
   }
 
 private:
-  thread_wait(void) : notify_(false) {
-  }
-
-  bool notify_;
+  std::atomic<bool> notify_{false};
   std::mutex mutex_;
-  std::condition_variable cv_;
+  std::condition_variable condition_variable_;
 };
 
-inline std::shared_ptr<thread_wait> make_thread_wait(void) {
+inline std::shared_ptr<thread_wait> make_thread_wait() {
   return thread_wait::make_thread_wait();
 }
 } // namespace pqrs

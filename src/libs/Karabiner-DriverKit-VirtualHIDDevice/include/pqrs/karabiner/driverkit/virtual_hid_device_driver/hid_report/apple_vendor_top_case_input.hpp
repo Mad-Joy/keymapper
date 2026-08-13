@@ -6,16 +6,13 @@
 
 #include "keys.hpp"
 #include <cstdint>
+#include <cstring>
 
-namespace pqrs {
-namespace karabiner {
-namespace driverkit {
-namespace virtual_hid_device_driver {
-namespace hid_report {
+namespace pqrs::karabiner::driverkit::virtual_hid_device_driver::hid_report {
 
 class __attribute__((packed)) apple_vendor_top_case_input final {
 public:
-  apple_vendor_top_case_input(void) : report_id_(3) {}
+  apple_vendor_top_case_input() : report_id_(3) {}
   bool operator==(const apple_vendor_top_case_input& other) const { return (memcmp(this, &other, sizeof(*this)) == 0); }
   bool operator!=(const apple_vendor_top_case_input& other) const { return !(*this == other); }
 
@@ -25,9 +22,4 @@ private:
 public:
   keys keys;
 };
-
-} // namespace hid_report
-} // namespace virtual_hid_device_driver
-} // namespace driverkit
-} // namespace karabiner
-} // namespace pqrs
+} // namespace pqrs::karabiner::driverkit::virtual_hid_device_driver::hid_report
