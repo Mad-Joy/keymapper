@@ -1,5 +1,5 @@
 
-#include "HookThread.h"
+#include "Hooks.h"
 #include "common/output.h"
 #include <thread>
 #include <future>
@@ -40,42 +40,45 @@ namespace {
     return CallNextHookEx(g_mouse_hook, code, wparam, lparam);
   }
 
-  void update_hook_config() {
-    const auto lock = std::lock_guard(g_next_hook_config_mutex);
-    g_hook_config = g_next_hook_config;
+  // keyboard is hooked on main thread, mouse is hooked on hook thread
+  void unhook_devices(bool on_hook_thread) {
+    if (!on_hook_thread) {
+      if (g_keyboard_hook)
+        UnhookWindowsHookEx(g_keyboard_hook);
+      g_keyboard_hook = nullptr;
+    }
+    else {
+      if (g_mouse_hook)
+        UnhookWindowsHookEx(g_mouse_hook);
+      g_mouse_hook = nullptr;
+    }
   }
 
-  void unhook_devices() {
-    if (g_keyboard_hook)
-      UnhookWindowsHookEx(g_keyboard_hook);
-    g_keyboard_hook = nullptr;
-
-    if (g_mouse_hook)
-      UnhookWindowsHookEx(g_mouse_hook);
-    g_mouse_hook = nullptr;
-  }
-
-  void hook_devices() {
+  void hook_devices(bool on_hook_thread) {
     const auto keyboard_was_hooked = (g_keyboard_hook != nullptr);
     const auto mouse_was_hooked = (g_mouse_hook != nullptr);
 
-    unhook_devices();
-    update_hook_config();
+    unhook_devices(on_hook_thread);
 
-    if (g_hook_config.keyboard_callback)
-      g_keyboard_hook = SetWindowsHookExW(
-        WH_KEYBOARD_LL, keyboard_hook_proc, g_hook_config.instance, 0);
-
-    if (g_hook_config.mouse_callback)
-      g_mouse_hook = SetWindowsHookExW(
-        WH_MOUSE_LL, mouse_hook_proc, g_hook_config.instance, 0);
-
-    const auto keyboard_is_hooked = (g_keyboard_hook != nullptr);
-    const auto mouse_is_hooked = (g_mouse_hook != nullptr);
-    if (keyboard_is_hooked != keyboard_was_hooked)
-      verbose(keyboard_is_hooked ? "Hooked keyboard" : "Unhooked keyboard");
-    if (mouse_is_hooked != mouse_was_hooked)
-      verbose(mouse_is_hooked ? "Hooked mouse" : "Unhooked mouse");
+    const auto lock = std::lock_guard(g_next_hook_config_mutex);
+    if (!on_hook_thread) {
+      g_hook_config.keyboard_callback = g_next_hook_config.keyboard_callback;
+      if (g_hook_config.keyboard_callback)
+        g_keyboard_hook = SetWindowsHookExW(
+          WH_KEYBOARD_LL, keyboard_hook_proc, g_hook_config.instance, 0);
+      const auto keyboard_is_hooked = (g_keyboard_hook != nullptr);
+      if (keyboard_is_hooked != keyboard_was_hooked)
+        verbose(keyboard_is_hooked ? "Hooked keyboard" : "Unhooked keyboard");
+    }
+    else {
+      g_hook_config.mouse_callback = g_next_hook_config.mouse_callback;
+      if (g_hook_config.mouse_callback)
+        g_mouse_hook = SetWindowsHookExW(
+          WH_MOUSE_LL, mouse_hook_proc, g_hook_config.instance, 0);
+      const auto mouse_is_hooked = (g_mouse_hook != nullptr);
+      if (mouse_is_hooked != mouse_was_hooked)
+        verbose(mouse_is_hooked ? "Hooked mouse" : "Unhooked mouse");
+    }
   }
 
   void hook_thread_main(std::promise<void> ready) {
@@ -88,9 +91,9 @@ namespace {
 
     while (GetMessageW(&message, nullptr, 0, 0) > 0)
       if (message.message == WM_APP_CONFIGURE_HOOKS)
-        hook_devices();
+        hook_devices(true);
 
-    unhook_devices();
+    unhook_devices(true);
   }
 
   void start_hook_thread() {
@@ -100,24 +103,29 @@ namespace {
     ready_future.get();
   }
 
-  void post_hook_config(const HookConfig& config) {
+  void set_hook_config(const HookConfig& config) {
     const auto lock = std::lock_guard(g_next_hook_config_mutex);
     g_next_hook_config = config;
-    PostThreadMessageW(g_hook_thread_id, WM_APP_CONFIGURE_HOOKS, 0, 0);
+
+    if (g_hook_thread.joinable())
+      PostThreadMessageW(g_hook_thread_id, WM_APP_CONFIGURE_HOOKS, 0, 0);
   }
 } // namespace
 
 void unhook_devices() {
-  if (g_hook_thread.joinable())
-    post_hook_config({ });
+  set_hook_config({ });
+  unhook_devices(false);
 }
 
 void hook_devices(HINSTANCE instance,
     KeyboardHookCallback keyboard_hook_callback,
     MouseHookCallback mouse_hook_callback) {
-  if (!g_hook_thread.joinable())
+
+  if (mouse_hook_callback && !g_hook_thread.joinable())
     start_hook_thread();
-  post_hook_config({ instance, keyboard_hook_callback, mouse_hook_callback });
+
+  set_hook_config({ instance, keyboard_hook_callback, mouse_hook_callback });
+  hook_devices(false);
 }
 
 void shutdown_hook_thread() {

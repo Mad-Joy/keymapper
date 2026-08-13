@@ -4,7 +4,7 @@
 #include "runtime/Timeout.h"
 #include "common/windows/LimitSingleInstance.h"
 #include "common/output.h"
-#include "HookThread.h"
+#include "Hooks.h"
 #include "Devices.h"
 #include <WinSock2.h>
 #include <mutex>
