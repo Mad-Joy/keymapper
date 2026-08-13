@@ -17,8 +17,8 @@ endif()
 configure_file("src/common/version.h.in" "${CMAKE_SOURCE_DIR}/src/common/_version.h")
 
 if(CMAKE_SYSTEM_NAME MATCHES "Darwin")
-  # Karabiner-DriverKit requires C++20
-  set(CMAKE_CXX_STANDARD 20)
+  # Karabiner-DriverKit requires C++23
+  set(CMAKE_CXX_STANDARD 23)
 else()
   set(CMAKE_CXX_STANDARD 17)
 endif()

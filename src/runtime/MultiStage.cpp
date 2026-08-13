@@ -1,5 +1,6 @@
 
 #include "MultiStage.h"
+#include <algorithm>
 
 namespace {
   bool is_server_event(const KeyEvent& event) {

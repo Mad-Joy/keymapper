@@ -5,6 +5,7 @@
 #include "common/output.h"
 #include <sstream>
 #include <utility>
+#include <algorithm>
 
 namespace {
   KeySequence replace_logical_keys(KeySequence sequence) {

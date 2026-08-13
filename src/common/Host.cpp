@@ -128,9 +128,10 @@ Host::~Host() {
 }
 
 bool Host::listen() {
-  m_listen_fd = ::socket(AF_UNIX, SOCK_STREAM | SOCK_CLOEXEC, 0);
+  m_listen_fd = ::socket(AF_UNIX, SOCK_STREAM, 0);
   if (m_listen_fd == invalid_socket)
     return false;
+  set_close_on_exec(m_listen_fd);
 
   auto addr = sockaddr_un{ };
   addr.sun_family = AF_UNIX;
@@ -200,7 +201,7 @@ Connection Host::connect(std::optional<Duration> timeout) {
   const auto retry_until_timepoint = (timeout ?
     std::make_optional(Clock::now() + *timeout) : std::nullopt);
 
-  auto socket_fd = ::socket(AF_UNIX, SOCK_STREAM | SOCK_CLOEXEC, 0);
+  auto socket_fd = ::socket(AF_UNIX, SOCK_STREAM, 0);
   for (;;) {
     if (socket_fd == invalid_socket)
       return { };
@@ -215,12 +216,13 @@ Connection Host::connect(std::optional<Duration> timeout) {
           !connection.read(&versions_match)) {
         // this fails regularly when reconnecting to a closing host
         connection.disconnect();
-        socket_fd = ::socket(AF_UNIX, SOCK_STREAM | SOCK_CLOEXEC, 0);
+        socket_fd = ::socket(AF_UNIX, SOCK_STREAM, 0);
         continue;
       }
       if (!versions_match)
         break;
 
+      set_close_on_exec(socket_fd);
       make_non_blocking(socket_fd);
       return connection;
     }
