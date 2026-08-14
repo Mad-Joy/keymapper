@@ -192,14 +192,13 @@ namespace {
       g_interrupt_fd = *client_socket;
 
       if (read_initial_config()) {
-        if (!g_virtual_devices.create_keyboard_device()) {
-          error("Creating virtual keyboard failed");
-          return 1;
-        }
-
         if (!g_grabbed_devices.grab(g_state.has_mouse_mappings(),
               m_grab_device_filters)) {
           error("Initializing input device grabbing failed");
+          return 1;
+        }
+        if (!g_virtual_devices.create_keyboard_device()) {
+          error("Creating virtual keyboard failed");
           return 1;
         }
         if (!g_virtual_devices.update_forward_devices(

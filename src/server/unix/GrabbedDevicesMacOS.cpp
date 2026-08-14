@@ -113,6 +113,7 @@ private:
   bool m_can_forward_mouse_events{ };
   bool m_devices_changed{ };
   std::vector<GrabDeviceFilter> m_grab_filters;
+  std::vector<IOHIDDeviceRef> m_karabiner_elements_devices;
   std::vector<IOHIDDeviceRef> m_grabbed_devices;
   std::vector<DeviceDesc> m_grabbed_device_descs;
   std::vector<Event> m_event_queue;
@@ -246,6 +247,12 @@ private:
     m_event_queue.push_back({ static_cast<int>(device_index), page, code, value });
   }
 
+  bool is_karabiner_elements_device(IOHIDDeviceRef device) const {
+    return (std::find(m_karabiner_elements_devices.begin(),
+      m_karabiner_elements_devices.end(),
+      device) != m_karabiner_elements_devices.end());
+  }
+
   void update() {
     verbose("Updating device list");
 
@@ -257,6 +264,14 @@ private:
     CFSetGetValues(device_set, (const void**)devices.data());
     std::sort(devices.begin(), devices.end());
 
+    if (m_karabiner_elements_devices.empty() && m_grabbed_devices.empty())
+      for (auto i = 0; i < device_count; ++i) {
+        const auto device = devices[i];
+        const auto device_id = get_device_id(device);
+        if (is_virtual_device(device_id))
+          m_karabiner_elements_devices.push_back(device);
+      }
+
     // update grabbed devices
     auto previously_grabbed = std::move(m_grabbed_devices);
     for (auto i = 0; i < device_count; ++i) {
@@ -267,7 +282,8 @@ private:
         continue;
 
       auto status = "ignored";
-      if (!is_virtual_device(device_id)) {
+      if (!is_virtual_device(device_id) || 
+          is_karabiner_elements_device(device)) {
         status = "skipped";
         if (evaluate_grab_filters(m_grab_filters, device_name, device_id,
               is_grabbed_by_default(device, m_grab_mice))) {
