@@ -455,6 +455,9 @@ void ParseKeySequence::parse(It it, const It end) {
       // begin modified-group
       if (in_together_group)
         throw ParseError("Unexpected '{'");
+      // do not allow {{
+      if (m_key_buffer.empty())
+        throw ParseError("Unexpected '{'");
       m_keys_pressed_before_modifier_group.push_back(m_pressed_keys.size());
       flush_key_buffer(false);
       if (m_pressed_keys.empty())

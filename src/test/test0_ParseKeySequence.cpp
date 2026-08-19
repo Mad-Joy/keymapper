@@ -228,6 +228,8 @@ TEST_CASE("Input Expression", "[ParseKeySequence]") {
   CHECK_THROWS(parse_input("!(A B)"));
   CHECK_THROWS(parse_input("!A{B}"));
   CHECK_THROWS(parse_input("!A 100ms"));
+  CHECK_THROWS(parse_input("{A}"));
+  CHECK_THROWS(parse_input("A{{B}}"));
 
   // Output on release
   CHECK_THROWS(parse_input("A ^ B"));
@@ -622,6 +624,8 @@ TEST_CASE("Output Expression", "[ParseKeySequence]") {
   CHECK_THROWS(parse_output("(A ^ B)"));
   CHECK_THROWS(parse_output("A{^ B}"));
   CHECK_THROWS(parse_output("A^{B}"));
+  CHECK_THROWS(parse_output("{A}"));
+  CHECK_THROWS(parse_output("A{{B}}"));
 
   // No MightMatch
   CHECK_THROWS(parse_output("? A B"));
