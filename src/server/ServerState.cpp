@@ -257,13 +257,14 @@ bool ServerState::translate_input(KeyEvent input, int device_index) {
     return true;
   }
 
-  // waiting for input timeout
-  if (!output.empty() && output.back().key == Key::timeout) {
-    const auto& request = output.back();
+  // waiting for input 
+  const auto it = std::find_if(output.begin(), output.end(), 
+    [](const KeyEvent& event) { return event.key == Key::timeout; });
+  if (it != output.end()) {
     schedule_timeout(
-      timeout_to_milliseconds(request.value), 
-      cancel_timeout_on_up(request.state));
-    output.pop_back();
+      timeout_to_milliseconds(it->value), 
+      cancel_timeout_on_up(it->state));
+    output.erase(it);
   }
 
   // copy delta of input wheel event to output

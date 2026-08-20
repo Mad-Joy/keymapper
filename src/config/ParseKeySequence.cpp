@@ -174,10 +174,14 @@ bool ParseKeySequence::before_modified_group(It it, const It end) const {
 void ParseKeySequence::add_timeout_event(KeyEvent::value_t timeout, 
     bool is_not, bool cancel_on_up) {
   flush_key_buffer(true);
-  if (m_is_input && !has_key_down(m_sequence))
+  if (m_is_input && m_sequence.empty())
     throw ParseError("Input sequence must not start with timeout");
   if (!m_is_input && is_not)
     throw ParseError("Ouput sequence must not contain a not-timeout");
+
+  // turn Not before timeout in an Up
+  if (m_is_input && m_sequence.back().state == KeyState::Not)
+    m_sequence.back().state = KeyState::Up;
 
   // in output expressions always use state Down
   // in input expressions use Up or Down depending on what should cancel a timeout:

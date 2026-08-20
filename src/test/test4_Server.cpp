@@ -443,8 +443,8 @@ TEST_CASE("Multi staging - not timeout", "[Server]") {
   CHECK(state.apply_input("+A") == "");
   CHECK(state.apply_input("+A") == "");
   CHECK(state.apply_timeout_not_reached() == "");
-  CHECK(state.apply_input("-A") == "");
-  CHECK(state.flush() == "+B -B");
+  CHECK(state.apply_input("-A") == "+B -B");
+  CHECK(state.flush() == "");
 }
 
 //--------------------------------------------------------------------
@@ -747,6 +747,56 @@ TEST_CASE("Wrong Keyrepeat after timeout (#216)", "[Server]") {
   CHECK(state.apply_input("+B") == "+X");
   CHECK(state.apply_input("-B") == "-X");
   CHECK(state.apply_input("-A") == "");
+  REQUIRE(state.stage_is_clear());
+}
+
+//--------------------------------------------------------------------
+
+TEST_CASE("Timeout after Not in input #2", "[Server]") {
+  auto state = create_state(R"(
+    !A !500ms A >> X
+    A >> Z
+  )");
+
+  CHECK(state.apply_input("+A") == "+Z");
+  CHECK(state.apply_input("-A") == "-Z");
+  CHECK(state.apply_timeout_reached() == "");
+  REQUIRE(state.stage_is_clear());
+  
+  CHECK(state.apply_input("+A") == "+Z");
+  CHECK(state.apply_input("-A") == "-Z");
+  CHECK(state.apply_timeout_not_reached() == "");
+  CHECK(state.apply_input("+A") == "+X");
+  CHECK(state.apply_input("-A") == "-X");
+  CHECK(state.apply_timeout_not_reached() == "");
+  CHECK(state.apply_input("+B") == "+B");
+  CHECK(state.apply_input("-B") == "-B");
+  REQUIRE(state.stage_is_clear());
+}
+
+//--------------------------------------------------------------------
+
+TEST_CASE("Timeout after Not in input #3", "[Server]") {
+  auto state = create_state(R"(
+    !A 500ms A >> X
+    A >> Z
+  )");
+
+  CHECK(state.apply_input("+A") == "+Z");
+  CHECK(state.apply_input("-A") == "-Z");
+  CHECK(state.apply_timeout_not_reached() == "");
+  CHECK(state.apply_input("+B") == "+B");
+  CHECK(state.apply_input("-B") == "-B");
+  REQUIRE(state.stage_is_clear());
+  
+  CHECK(state.apply_input("+A") == "+Z");
+  CHECK(state.apply_input("-A") == "-Z");
+  CHECK(state.apply_timeout_reached() == "");
+  CHECK(state.apply_input("+A") == "+X");
+  CHECK(state.apply_input("-A") == "-X");
+  CHECK(state.apply_timeout_reached() == "");
+  CHECK(state.apply_input("+B") == "+B");
+  CHECK(state.apply_input("-B") == "-B");
   REQUIRE(state.stage_is_clear());
 }
 

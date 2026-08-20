@@ -2440,6 +2440,31 @@ TEST_CASE("Ignore cancelled timeout", "[Stage]") {
 
 //--------------------------------------------------------------------
 
+TEST_CASE("Timeout after Not in input", "[Stage]") {
+  auto config = R"(
+    !A !500ms A >> X
+    A >> Z
+  )";
+  Stage stage = create_stage(config);
+
+  CHECK(apply_input(stage, "+A") == "+Z");
+  CHECK(apply_input(stage, "-A") == "!500ms -Z");
+  CHECK(apply_input(stage, reply_timeout_ms(500)) == "");
+  REQUIRE(stage.is_clear());
+
+  CHECK(apply_input(stage, "+A") == "+Z");
+  CHECK(apply_input(stage, "-A") == "!500ms -Z");
+  CHECK(apply_input(stage, reply_timeout_ms(499)) == "");
+  CHECK(apply_input(stage, "+A") == "+X");
+  CHECK(apply_input(stage, "-A") == "!500ms -X");
+  CHECK(apply_input(stage, reply_timeout_ms(499)) == "");
+  CHECK(apply_input(stage, "+B") == "+B");
+  CHECK(apply_input(stage, "-B") == "-B");
+  REQUIRE(stage.is_clear());
+}
+
+//--------------------------------------------------------------------
+
 TEST_CASE("Cancelled sequence", "[Stage]") {
   auto config = R"(
     A S D >> W

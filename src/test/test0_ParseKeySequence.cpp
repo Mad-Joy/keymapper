@@ -227,7 +227,6 @@ TEST_CASE("Input Expression", "[ParseKeySequence]") {
   CHECK_THROWS(parse_input("!"));
   CHECK_THROWS(parse_input("!(A B)"));
   CHECK_THROWS(parse_input("!A{B}"));
-  CHECK_THROWS(parse_input("!A 100ms"));
   CHECK_THROWS(parse_input("{A}"));
   CHECK_THROWS(parse_input("A{{B}}"));
 
@@ -364,6 +363,22 @@ TEST_CASE("Input Expression", "[ParseKeySequence]") {
     KeyEvent(Key::A, KeyState::UpAsync),
   }));
 
+  CHECK(parse_input("!A 1000ms B") == (KeySequence{
+    KeyEvent(Key::A, KeyState::Up),
+    make_timeout_ms(1000, false),
+    KeyEvent(Key::B, KeyState::Down),
+    KeyEvent(Key::B, KeyState::UpAsync),
+  }));
+
+  CHECK(parse_input("!A !1000ms B") == (KeySequence{
+    KeyEvent(Key::A, KeyState::Up),
+    make_not_timeout_ms(1000, false),
+    KeyEvent(Key::B, KeyState::Down),
+    KeyEvent(Key::B, KeyState::UpAsync),
+  }));
+
+  CHECK_THROWS(parse_input("100ms"));
+  CHECK_THROWS(parse_input("!100ms"));
   CHECK_NOTHROW(parse_input("A 10000000ms"));
   CHECK_THROWS(parse_input("1000ms A"));
   CHECK_THROWS(parse_input("(A 1000ms)"));
