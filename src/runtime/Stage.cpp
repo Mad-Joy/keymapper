@@ -44,7 +44,7 @@ namespace {
     return (e.state == KeyState::Up || e.state == KeyState::Down);
   }
 
-  bool has_non_optional(const KeySequence& sequence) {
+  bool has_non_optional(ConstKeySequenceRange sequence) {
     return std::any_of(begin(sequence), end(sequence), is_non_optional);
   }
 
@@ -52,11 +52,6 @@ namespace {
     return std::any_of(begin(sequence), end(sequence), [](const KeyEvent& e) {
       return (e.state == KeyState::OutputOnRelease);
     });
-  }
-
-  bool has_unmatched_down(ConstKeySequenceRange sequence) {
-    return std::any_of(begin(sequence), end(sequence),
-      [](const KeyEvent& e) { return (e.state == KeyState::Down); });
   }
 
   // sort outputs by growing negative index (to allow binary search)
@@ -585,7 +580,7 @@ void Stage::apply_input(const KeyEvent event, int device_index) {
 
       while (sequence.size() > 1) {
         sequence.pop_back();
-        if (!has_unmatched_down(sequence))
+        if (!has_non_optional(sequence))
           break;
 
         std::tie(result, output, trigger, context_index, input_timeout_event) = 
@@ -602,17 +597,12 @@ void Stage::apply_input(const KeyEvent event, int device_index) {
       m_output_buffer.push_back(input_timeout_event);
 
       // track timeout - use last key Down as trigger
-      if (auto down = find_last_down_event(sequence)) {
+      if (auto down = find_last_down_event(sequence))
         if (!m_current_timeout ||
             *m_current_timeout != input_timeout_event ||
             m_current_timeout->trigger != down->key) {
           m_current_timeout = { input_timeout_event, down->key };
         }
-        else if (is_key_up_event) {
-          // timeout did not change, undo adding to output buffer
-          m_output_buffer.pop_back();
-        }
-      }
     }
 
     // hold back sequence when something might match

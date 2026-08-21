@@ -800,6 +800,40 @@ TEST_CASE("Timeout after Not in input #3", "[Server]") {
   REQUIRE(state.stage_is_clear());
 }
 
+
+//--------------------------------------------------------------------
+
+TEST_CASE("Debounce", "[Server]") {
+  auto state = create_state(R"(
+    @virtual-keys-toggle false
+    held = Virtual
+    held >> X
+    !A !50ms A >>
+    !A >> !held
+    A >> held
+  )");
+
+  CHECK(state.apply_input("+A") == "+X");
+  CHECK(state.apply_input("-A") == "");
+  CHECK(state.apply_timeout_reached() == "-X");
+  REQUIRE(state.stage_is_clear());
+
+  CHECK(state.apply_input("+A") == "+X");
+  CHECK(state.apply_input("-A") == "");
+  CHECK(state.apply_timeout_not_reached() == "");
+  CHECK(state.apply_input("+A") == "");
+  CHECK(state.apply_input("-A") == "");
+  CHECK(state.apply_timeout_reached() == "-X");
+  REQUIRE(state.stage_is_clear());
+  
+  CHECK(state.apply_input("+A") == "+X");
+  CHECK(state.apply_input("-A") == "");
+  CHECK(state.apply_timeout_not_reached() == "");
+  CHECK(state.apply_input("+B") == "-X +B");
+  CHECK(state.apply_input("-B") == "-B");
+  REQUIRE(state.stage_is_clear());
+}
+
 //--------------------------------------------------------------------
 
 TEST_CASE("Suppress key repeat of all but last device", "[Server]") {
