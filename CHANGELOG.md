@@ -3,17 +3,33 @@
 All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
-## [Unreleased]
+## [Version 5.7.0] - 2026-08-22
+
+### Added
+
+- Allowed to run alongside Karabiner-Elements ([#376](https://github.com/houmain/keymapper/issues/376)).
+- Allowed timeouts after key release in input expression. e.g.:
+    ```bash
+    # Turn A to C when B quickly follows release of A
+    !A !250ms B >> Backspace C
+    ```
+
+### Changed
+
+- Updated `Karabiner-DriverKit-VirtualHIDDevice` to version v8.2.0 ([#384](https://github.com/houmain/keymapper/issues/384), [#389](https://github.com/houmain/keymapper/issues/389)).
+- Disallowed opening modifier groups twice, as this has no effect. e.g. `A{{B}}`.
 
 ### Fixed
 
-- Prevent IPC socket fd leak into child processes spawned by `$(...)` config commands, which caused `Binding control port failed` errors after restart ([#388](https://github.com/houmain/keymapper/pull/388)).
+- Improved mouse hooking efficiency on Windows ([#383](https://github.com/houmain/keymapper/discussions/383), [#184](https://github.com/houmain/keymapper/issues/184)).
+- Improved process spawning efficiency on Windows ([#383](https://github.com/houmain/keymapper/discussions/383)).
+- Prevented handle leaking into child processes spawned by `$(...)` on Linux, which caused "Binding control port failed" errors after restart ([#388](https://github.com/houmain/keymapper/pull/388)).
 
 ## [Version 5.6.0] - 2026-06-14
 
 ### Added
 
-- Allow timeouts in input expressions which never partially match / start with `?` ([#372](https://github.com/houmain/keymapper/issues/372)). e.g.
+- Allowed timeouts in input expressions which never partially match / start with `?` ([#372](https://github.com/houmain/keymapper/issues/372)). e.g.:
     ```bash
     # Turn A to C when B quickly follows A
     ? A !250ms B >> Backspace C
@@ -21,7 +37,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Fixed
 
-- Allow held key to match different mappings even when timeouts are used ([#372](https://github.com/houmain/keymapper/issues/372)). e.g.
+- Allowed held key to match different mappings even when timeouts are used ([#372](https://github.com/houmain/keymapper/issues/372)). e.g.:
     ```bash
     # Keep outputting C and D alternately while A is held
     state = Virtual
@@ -51,7 +67,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Added mouse support to MacOS version. Touchpads and their buttons are still not supported ([#228](https://github.com/houmain/keymapper/issues/228)).
 - Added `keymapperctl --type-stdin` for piping in strings. e.g.:
 
-    ```
+    ```bash
     echo "Test" | keymapperctl --type-stdin
     ```
 
@@ -142,7 +158,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Added
 
-- Added directive `@virtual-keys-toggle`, which allows to change the behavior of virtual keys in outputs ([#309](https://github.com/houmain/keymapper/issues/309)). e.g.
+- Added directive `@virtual-keys-toggle`, which allows to change the behavior of virtual keys in outputs ([#309](https://github.com/houmain/keymapper/issues/309)). e.g.:
 
     ```bash
     @virtual-keys-toggle true   # true is (still) the default
@@ -1187,6 +1203,7 @@ The reason for the major version number increment is mainly because of the chang
 
 ## [Version 1.1.5] - 2020-05-09
 
+[version 5.7.0]: https://github.com/houmain/keymapper/compare/5.6.0...5.7.0
 [version 5.6.0]: https://github.com/houmain/keymapper/compare/5.5.1...5.6.0
 [version 5.5.1]: https://github.com/houmain/keymapper/compare/5.5.0...5.5.1
 [version 5.5.0]: https://github.com/houmain/keymapper/compare/5.4.2...5.5.0
